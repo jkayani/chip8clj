@@ -4,23 +4,41 @@
 (def stack-frame nil)
 
 (def vm (atom {
-  "memory" (byte-array 4096)
-  "registers" (zipmap (range 0x0 0x10) (repeat 15 0))
-  "address-register" 0x0000
-  "stack" '()
-  "delay-timer" nil
-  "sound-timer" nil
+  :memory []
+  :registers (zipmap (range 0x0 0x10) (repeat 15 0))
+  :address-register 0x0000
+  :stack '()
+  :delay-timer nil
+  :sound-timer nil
 }))
 
 ; Utilities
 
+(defn get-byte [x n]
+    (case n
+      1 (bit-shift-right x 8)
+      2 (bit-and x 0xFF)
+      nil))
+
+(defn get-nibble [x n]
+  (let [
+    bite (get-byte x (if (> n 2) 2 1))
+  ]
+  (case n
+    1 (bit-shift-right bite 4)
+    2 (bit-and bite 0xF)
+    3 (bit-shift-right bite 4)
+    4 (bit-and bite 0xF)
+    nil)))
+
+; Registers     
+
 (defn read-register [register]
-  (get-in @vm ["registers" register]))
+  (get-in @vm [:registers register]))
 
 (defn update-register! [register value-fn & args]
   (swap! vm
-    (fn [current-vm] 
-      (update-in current-vm ["registers" register] #(value-fn %)))))
+    update-in [:registers register] #(value-fn %)))
 
 ; Opcodes
 
@@ -44,20 +62,51 @@
 
 (defn op8-xor [reg1 reg2]
   (update-register! reg1 (partial bit-xor (read-register reg2))))
- 
-    
-; Emulator execution
 
-(defn load-program [path] 
+; Instruction parsing
+
+(defn op6-family [word]
   (let [
-      program (byte-array (int 1e3)) 
-    ]
-    (do
+    reg (get-nibble word 2)
+    constant (get-byte word 2)
+  ]
+   (list op6 reg constant)))
+
+(defn choose-opcode [word]
+  (case 
+    (bit-shift-right word 12)
+    0 nil
+    1 nil
+    2 nil
+    3 nil
+    4 nil
+    5 nil
+    6 (op6-family word)
+    7 nil
+    8 nil
+    9 nil
+    nil))
+    
+; I/O execution
+
+(defn load-program! [program] 
+  (swap! vm
+    update-in [:memory] (-> program (vec) (constantly))))
+
+(defmulti read-program 
+  #(if (= String (class %)) "path" "data"))
+
+  (defmethod read-program "path" [path]
+    (let [
+        program (byte-array (int 1e3)) 
+      ]
       (->
         (new java.io.FileInputStream path)
         (.read program))
-      (swap! vm
-        #(update-in @vm ["memory"] (constantly program))))))
+        (load-program!)))
+
+  (defmethod read-program "data" [data]
+    (load-program! data))
 
 (defn execute []
   (vec (@vm "memory")))
@@ -66,5 +115,5 @@
   "I don't do a whole lot ... yet."
   [& args]
   (do
-    (load-program (args 0))
+    (read-program (args 0))
     (execute)))
