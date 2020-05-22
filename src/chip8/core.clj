@@ -73,6 +73,18 @@
 (defn op8-xor [state reg1 reg2]
   (update-register state reg1 (partial bit-xor (read-register state reg2))))
 
+(defn op8-add [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    val2 (read-register state reg2)
+
+    ; set carry flag if any corresponding bits are the same and 1
+    cf (if (= 0 (bit-and val1 val2)) 0 1)
+  ]
+  (->
+    (update-register state reg1 (partial + (read-register state reg2)))
+    (update-register 0xF (constantly cf)))))
+
 ; Instruction parsing
 
 (defn op6-family [word]

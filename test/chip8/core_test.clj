@@ -21,7 +21,7 @@
   (testing "repl"
     (->
       (read-program!
-        (byte-array [0x61 01 0x62 02 0x63 03]))
+        (byte-array [0x61 1 0x62 2 0x63 3]))
       (execute!)
       (get :registers)
       (= 
@@ -105,4 +105,21 @@
         (get-in (op8-xor init-state 1 2) [:registers 1])
         (= 0xF0)
         (is)))))
+
+  (testing "op8: ADD 2 registers"
+    (let [
+      s1 (update-in @vm [:registers] merge {1 1 2 0})
+      s2 (update-in @vm [:registers] merge {1 1 2 1})
+    ]
+    (do
+      ; No carry flag
+      (as->
+        (get-in (op8-add s1 1 2) [:registers]) $
+        (and (= 1 ($ 1)) (= 0 ($ 0xF)))
+        (is $))
+      ; carry flag
+      (as->
+        (get-in (op8-add s2 1 2) [:registers]) $
+        (and (= 2 ($ 1)) (= 1 ($ 0xF)))
+        (is $)))))
 )
