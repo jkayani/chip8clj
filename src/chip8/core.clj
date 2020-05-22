@@ -5,7 +5,7 @@
 
 (def vm (atom {
   :memory []
-  :registers (zipmap (range 0x0 0x10) (repeat 15 0))
+  :registers (zipmap (range 0x0 0x10) (repeat 0xF 0))
   :address-register 0x0000
   :pc 0
   :stack '()
@@ -44,37 +44,34 @@
 
 ; Registers     
 
-(defn read-register [register]
-  (get-in @vm [:registers register]))
+(defn read-register [state register]
+  (get-in state [:registers register]))
 
-(defn update-register [register value-fn]
-  (let [
-    state @vm
-  ]
-    (update-in state [:registers register] #(value-fn %))))
+(defn update-register [state register value-fn]
+  (update-in state [:registers register] #(value-fn %)))
 
 ; Opcodes
 
 ; Writes constant to register
-(defn op6 [register constant]
-  (update-register register (constantly constant)))
+(defn op6 [state register constant]
+  (update-register state register (constantly constant)))
 
 ; Adds summand to register (no CF)
-(defn op7 [register summand]
-  (update-register register (partial + summand)))
+(defn op7 [state register summand]
+  (update-register state register (partial + summand)))
 
 ; Writes value of reg2 to reg1
-(defn op8-assign [reg1 reg2]
-  (update-register reg1 (constantly (read-register reg2))))
+(defn op8-assign [state reg1 reg2]
+  (update-register state reg1 (constantly (read-register state reg2))))
 
-(defn op8-and [reg1 reg2]
-  (update-register reg1 (partial bit-and (read-register reg2))))
+(defn op8-and [state reg1 reg2]
+  (update-register state reg1 (partial bit-and (read-register state reg2))))
 
-(defn op8-or [reg1 reg2]
-  (update-register reg1 (partial bit-or (read-register reg2))))
+(defn op8-or [state reg1 reg2]
+  (update-register state reg1 (partial bit-or (read-register state reg2))))
 
-(defn op8-xor [reg1 reg2]
-  (update-register reg1 (partial bit-xor (read-register reg2))))
+(defn op8-xor [state reg1 reg2]
+  (update-register state reg1 (partial bit-xor (read-register state reg2))))
 
 ; Instruction parsing
 
@@ -130,18 +127,19 @@
           (let [
             nxt-instr (fetch-nxt-instruction state)
             nxt-opcode (choose-opcode nxt-instr)
+            n-state (apply (first nxt-opcode) (cons state (rest nxt-opcode)))
           ]
             (do
               (print nxt-instr)
               (print nxt-opcode)
-              (print (apply (first nxt-opcode) (rest nxt-opcode)))
-              (update-in (apply (first nxt-opcode) (rest nxt-opcode)) [:pc] + 2))))
+              (print n-state )
+              (update-in n-state [:pc] + 2))))
     ]
     (do
       (println "\n")
       ;(print "Nxt state: " nxt-state "\n\n")
       (if (> (nxt-state :pc) (-> (nxt-state :memory) (count) (- 2)))
-        nil
+        nxt-state
         (recur @vm))))))
 
 ; Entrypoint
