@@ -14,11 +14,20 @@
       (is (= (get-nibble 0x1234 4) 4))))
 )
 
+(deftest REPL
+
+  (testing "repl"
+    (->>
+      (read-program!
+        (byte-array [0x61 01 0x62 02 0x63 03]))
+      (execute!)))
+)
+
 (deftest IO 
 
   (testing "read program data"
     (->> 
-      ((read-program (byte-array [0x61 0x01 0x61 0x02])) :memory)
+      ((read-program! (byte-array [0x61 0x01 0x61 0x02])) :memory)
       (= [0x61 0x01 0x61 0x02])
       (is)))
 )

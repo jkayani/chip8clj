@@ -7,6 +7,7 @@
   :memory []
   :registers (zipmap (range 0x0 0x10) (repeat 15 0))
   :address-register 0x0000
+  :pc 0
   :stack '()
   :delay-timer nil
   :sound-timer nil
@@ -31,37 +32,49 @@
     4 (bit-and bite 0xF)
     nil)))
 
+; Memory
+
+(defn fetch-nxt-instruction [state]
+  (let [
+    instr-ptr (state :pc)
+  ]
+    (+ 
+      (* 0x100 (get-in state [:memory instr-ptr]))
+      (get-in state [:memory (inc instr-ptr)]))))
+
 ; Registers     
 
 (defn read-register [register]
   (get-in @vm [:registers register]))
 
-(defn update-register! [register value-fn & args]
-  (swap! vm
-    update-in [:registers register] #(value-fn %)))
+(defn update-register [register value-fn]
+  (let [
+    state @vm
+  ]
+    (update-in state [:registers register] #(value-fn %))))
 
 ; Opcodes
 
 ; Writes constant to register
 (defn op6 [register constant]
-  (update-register! register (constantly constant)))
+  (update-register register (constantly constant)))
 
 ; Adds summand to register (no CF)
 (defn op7 [register summand]
-  (update-register! register (partial + summand)))
+  (update-register register (partial + summand)))
 
 ; Writes value of reg2 to reg1
 (defn op8-assign [reg1 reg2]
-  (update-register! reg1 (constantly (read-register reg2))))
+  (update-register reg1 (constantly (read-register reg2))))
 
 (defn op8-and [reg1 reg2]
-  (update-register! reg1 (partial bit-and (read-register reg2))))
+  (update-register reg1 (partial bit-and (read-register reg2))))
 
 (defn op8-or [reg1 reg2]
-  (update-register! reg1 (partial bit-or (read-register reg2))))
+  (update-register reg1 (partial bit-or (read-register reg2))))
 
 (defn op8-xor [reg1 reg2]
-  (update-register! reg1 (partial bit-xor (read-register reg2))))
+  (update-register reg1 (partial bit-xor (read-register reg2))))
 
 ; Instruction parsing
 
@@ -74,7 +87,7 @@
 
 (defn choose-opcode [word]
   (case 
-    (bit-shift-right word 12)
+    (get-nibble word 1)
     0 nil
     1 nil
     2 nil
@@ -93,10 +106,10 @@
   (swap! vm
     update-in [:memory] (-> program (vec) (constantly))))
 
-(defmulti read-program 
+(defmulti read-program! 
   #(if (= String (class %)) "path" "data"))
 
-  (defmethod read-program "path" [path]
+  (defmethod read-program! "path" [path]
     (let [
         program (byte-array (int 1e3)) 
       ]
@@ -105,15 +118,36 @@
         (.read program))
         (load-program!)))
 
-  (defmethod read-program "data" [data]
+  (defmethod read-program! "data" [data]
     (load-program! data))
 
-(defn execute []
-  (vec (@vm "memory")))
+; REPL 
+(defn execute! [init-state]
+  (loop [state init-state]
+    (let [
+      nxt-state
+        (swap! vm merge
+          (let [
+            nxt-instr (fetch-nxt-instruction state)
+            nxt-opcode (choose-opcode nxt-instr)
+          ]
+            (do
+              (print nxt-instr)
+              (print nxt-opcode)
+              (print (apply (first nxt-opcode) (rest nxt-opcode)))
+              (update-in (apply (first nxt-opcode) (rest nxt-opcode)) [:pc] + 2))))
+    ]
+    (do
+      (println "\n")
+      ;(print "Nxt state: " nxt-state "\n\n")
+      (if (> (nxt-state :pc) (-> (nxt-state :memory) (count) (- 2)))
+        nil
+        (recur @vm))))))
 
+; Entrypoint
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (do
-    (read-program (args 0))
-    (execute)))
+  (->>
+    (read-program! (args 0))
+    (execute!)))
