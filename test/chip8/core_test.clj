@@ -139,4 +139,72 @@
         (get-in (op8-subtract s2 1 2) [:registers]) $
         (and (= 4 ($ 1)) (= 0 ($ 0xF)))
         (is $)))))
+
+  (testing "op8: BITSHIFT RIGHT (CHIP8)"
+    (let [
+      s (update-in @vm [:registers] merge {1 8 2 9})
+    ]
+    (do
+      (as->
+        (get-in (op8-shift-right-std s 1 2) [:registers]) $
+        (and 
+          (= 4 ($ 1)) 
+          (= 9 ($ 2))
+          (= 1 ($ 0xF)))
+        (is $)))))
+
+  (testing "op8: BITSHIFT RIGHT (SCHIP)"
+    (let [
+      s (update-in @vm [:registers] merge {1 6 2 9})
+    ]
+    (do
+      (as->
+        (get-in (op8-shift-right-schip s 1 2) [:registers]) $
+        (and 
+          (= 3 ($ 1)) 
+          (= 9 ($ 2))
+          (= 0 ($ 0xF)))
+        (is $)))))
+
+  (testing "op8: BITSHIFT LEFT (CHIP8)"
+    (let [
+      s (update-in @vm [:registers] merge {1 8 2 12})
+      overflow (update-in @vm [:registers] merge {1 10 2 128})
+    ]
+    (do
+      (as->
+        (get-in (op8-shift-left-std s 1 2) [:registers]) $
+        (and 
+          (= 24 ($ 1)) 
+          (= 12 ($ 2))
+          (= 0 ($ 0xF)))
+        (is $))
+      (as->
+        (get-in (op8-shift-left-std overflow 1 2) [:registers]) $
+        (and 
+          (= 0 ($ 1)) 
+          (= 128 ($ 2))
+          (= 1 ($ 0xF)))
+        (is $)))))
+
+  (testing "op8: BITSHIFT LEFT (SCHIP)"
+    (let [
+      s (update-in @vm [:registers] merge {1 12 2 9})
+      overflow (update-in @vm [:registers] merge {1 128 2 9})
+    ]
+    (do
+      (as->
+        (get-in (op8-shift-left-schip s 1 2) [:registers]) $
+        (and 
+          (= 24 ($ 1)) 
+          (= 9 ($ 2))
+          (= 0 ($ 0xF)))
+        (is $))
+      (as->
+        (get-in (op8-shift-left-schip overflow 1 2) [:registers]) $
+        (and 
+          (= 0 ($ 1)) 
+          (= 9 ($ 2))
+          (= 1 ($ 0xF)))
+        (is $)))))
 )

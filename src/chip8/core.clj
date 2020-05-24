@@ -82,7 +82,7 @@
     cf (if (= 0 (bit-and val1 val2)) 0 1)
   ]
   (->
-    (update-register state reg1 (partial + (read-register state reg2)))
+    (update-register state reg1 (partial + val2))
     (update-register 0xF (constantly cf)))))
 
 (defn op8-subtract [state reg1 reg2]
@@ -95,9 +95,49 @@
     bf (if (->> (bit-xor val1 val2) (bit-and val2) (zero?)) 1 0)
   ]
   (->
-    (update-register state reg1 #(- %1 (read-register state reg2)))
+    (update-register state reg1 #(- %1 val2))
     (update-register 0xF (constantly bf)))))
+
+(defn op8-shift-right-std [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    val2 (read-register state reg2)
+    lsb (bit-and 0x01 val2)
+  ]
+  (->
+    (update-register state reg1 (constantly (bit-shift-right val2 1)))
+    (update-register 0xF (constantly lsb)))))
+
+; Variant of above opcode for SCHIP mode
+(defn op8-shift-right-schip [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    lsb (bit-and 0x01 val1)
+  ]
+  (->
+    (update-register state reg1 (constantly (bit-shift-right val1 1)))
+    (update-register 0xF (constantly lsb)))))
   
+(defn op8-shift-left-std [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    val2 (read-register state reg2)
+    msb (bit-and 0x80 val2)
+  ]
+  (->
+    (update-register state reg1 (constantly (bit-shift-left val2 1)))
+    (update-register 0xF (constantly msb)))))
+
+; Variant of above opcode for SCHIP mode
+(defn op8-shift-left-schip [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    msb (-> (bit-and 0x80 val1) (bit-shift-right 7))
+    new-val (-> (bit-shift-left val1 1) (bit-and 0xFF))
+  ]
+  (->
+    (update-register state reg1 (constantly new-val))
+    (update-register 0xF (constantly msb)))))
 
 ; Instruction parsing
 
