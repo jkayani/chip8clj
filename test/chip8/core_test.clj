@@ -122,4 +122,21 @@
         (get-in (op8-add s2 1 2) [:registers]) $
         (and (= 2 ($ 1)) (= 1 ($ 0xF)))
         (is $)))))
+
+  (testing "op8: SUBTRACT 2 registers"
+    (let [
+      s1 (update-in @vm [:registers] merge {1 12 2 8})
+      s2 (update-in @vm [:registers] merge {1 8 2 4})
+    ]
+    (do
+      ; No borrow 
+      (as->
+        (get-in (op8-subtract s1 1 2) [:registers]) $
+        (and (= 4 ($ 1)) (= 1 ($ 0xF)))
+        (is $))
+      ; borrow flag
+      (as->
+        (get-in (op8-subtract s2 1 2) [:registers]) $
+        (and (= 4 ($ 1)) (= 0 ($ 0xF)))
+        (is $)))))
 )

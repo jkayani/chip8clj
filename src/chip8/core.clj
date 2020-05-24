@@ -85,6 +85,20 @@
     (update-register state reg1 (partial + (read-register state reg2)))
     (update-register 0xF (constantly cf)))))
 
+(defn op8-subtract [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    val2 (read-register state reg2)
+
+    ; borrow flag is set when there is NO borrow, and cleared otherwise
+    ; borrow is when a bit in val2 is 1 and the corresponding bit in (xor val1 v2) is 1
+    bf (if (->> (bit-xor val1 val2) (bit-and val2) (zero?)) 1 0)
+  ]
+  (->
+    (update-register state reg1 #(- %1 (read-register state reg2)))
+    (update-register 0xF (constantly bf)))))
+  
+
 ; Instruction parsing
 
 (defn op6-family [word]
