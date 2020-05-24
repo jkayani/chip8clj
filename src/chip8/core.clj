@@ -5,7 +5,8 @@
 
 (def vm (atom {
   :memory []
-  :registers (zipmap (range 0x0 0x10) (repeat 0xF 0))
+  ;:registers (zipmap (range 0x0 0x10) (repeat 0xF 0))
+  :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
   :address-register 0x0000
   :pc 0
   :stack '()
@@ -15,10 +16,13 @@
 
 ; Utilities
 
+(defn byte-it [double-word]
+  (bit-and double-word 0xFF))
+
 (defn get-byte [x n]
     (case n
       1 (bit-shift-right x 8)
-      2 (bit-and x 0xFF)
+      2 (byte-it x)
       nil))
 
 (defn get-nibble [x n]
@@ -34,13 +38,19 @@
 
 ; Memory
 
+(defn read-memory [state addr]
+  (-> 
+    (get-in state [:memory addr])
+    (byte-it)))
+
 (defn fetch-nxt-instruction [state]
   (let [
     instr-ptr (state :pc)
   ]
+    (do (print instr-ptr (state :memory instr-ptr))
     (+ 
-      (* 0x100 (get-in state [:memory instr-ptr]))
-      (get-in state [:memory (inc instr-ptr)]))))
+      (* 0x100 (read-memory state instr-ptr))
+      (read-memory state (inc instr-ptr))))))
 
 ; Registers     
 
@@ -98,6 +108,16 @@
     (update-register state reg1 #(- %1 val2))
     (update-register 0xF (constantly bf)))))
 
+(defn op8-subtract-flipped [state reg1 reg2]
+  (let [
+    val1 (read-register state reg1)
+    val2 (read-register state reg2)
+    bf (if (->> (bit-xor val1 val2) (bit-and val1) (zero?)) 1 0)
+  ]
+  (->
+    (update-register state reg1 (constantly (- val2 val1)))
+    (update-register 0xF (constantly bf)))))
+
 (defn op8-shift-right-std [state reg1 reg2]
   (let [
     val1 (read-register state reg1)
@@ -120,12 +140,12 @@
   
 (defn op8-shift-left-std [state reg1 reg2]
   (let [
-    val1 (read-register state reg1)
     val2 (read-register state reg2)
-    msb (bit-and 0x80 val2)
+    msb (-> (bit-and 0x80 val2) (bit-shift-right 7))
+    new-val (-> (bit-shift-left val2 1) (byte-it))
   ]
   (->
-    (update-register state reg1 (constantly (bit-shift-left val2 1)))
+    (update-register state reg1 (constantly new-val))
     (update-register 0xF (constantly msb)))))
 
 ; Variant of above opcode for SCHIP mode
@@ -133,7 +153,7 @@
   (let [
     val1 (read-register state reg1)
     msb (-> (bit-and 0x80 val1) (bit-shift-right 7))
-    new-val (-> (bit-shift-left val1 1) (bit-and 0xFF))
+    new-val (-> (bit-shift-left val1 1) (byte-it))
   ]
   (->
     (update-register state reg1 (constantly new-val))
@@ -148,6 +168,32 @@
   ]
    (list op6 reg constant)))
 
+(defn op7-family [word]
+  (let [
+    reg (get-nibble word 2)
+    constant (get-byte word 2)
+  ]
+   (list op7 reg constant)))
+
+(defn op8-family [word]
+  (let [
+    reg1 (get-nibble word 2)
+    reg2 (get-nibble word 3)
+    op (get-nibble word 4)
+  ]
+   (case
+    op
+    0 (list op8-assign reg1 reg2)
+    1 (list op8-or reg1 reg2)
+    2 (list op8-and reg1 reg2)
+    3 (list op8-xor reg1 reg2)
+    4 (list op8-add reg1 reg2)
+    5 (list op8-subtract reg1 reg2)
+    6 (list op8-shift-right-std reg1 reg2)
+    7 (list op8-subtract-flipped reg1 reg2)
+    0xE (list op8-shift-left-std reg1 reg2)
+    nil)))
+
 (defn choose-opcode [word]
   (case 
     (get-nibble word 1)
@@ -158,8 +204,8 @@
     4 nil
     5 nil
     6 (op6-family word)
-    7 nil
-    8 nil
+    7 (op7-family word)
+    8 (op8-family word)
     9 nil
     nil))
     
@@ -167,7 +213,11 @@
 
 (defn load-program! [program] 
   (swap! vm
-    update-in [:memory] (-> program (vec) (constantly))))
+    update-in [:memory] 
+      (->> 
+        program 
+        (vec) 
+        (constantly))))
 
 (defmulti read-program! 
   #(if (= String (class %)) "path" "data"))
@@ -188,24 +238,24 @@
 (defn execute! [init-state]
   (loop [state init-state]
     (let [
-      nxt-state
+      new-state
         (swap! vm merge
           (let [
             nxt-instr (fetch-nxt-instruction state)
             nxt-opcode (choose-opcode nxt-instr)
-            n-state (apply (first nxt-opcode) (cons state (rest nxt-opcode)))
+            nxt-state (apply (first nxt-opcode) (cons state (rest nxt-opcode)))
           ]
             (do
               (print nxt-instr)
               (print nxt-opcode)
-              (print n-state )
-              (update-in n-state [:pc] + 2))))
+              (print nxt-state )
+              (update-in nxt-state [:pc] + 2))))
     ]
     (do
       (println "\n")
       ;(print "Nxt state: " nxt-state "\n\n")
-      (if (> (nxt-state :pc) (-> (nxt-state :memory) (count) (- 2)))
-        nxt-state
+      (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
+        new-state
         (recur @vm))))))
 
 ; Entrypoint

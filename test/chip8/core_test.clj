@@ -2,7 +2,9 @@
   (:require [clojure.test :refer :all]
             [chip8.core :refer :all]))
 
-(def stock-registers (zipmap (range 0 0x10) (repeat 0xF 0)))
+(def stock-registers
+  (apply sorted-map
+    (interleave (range 0x0 0x10) (repeat 0x10 0))))
 
 (deftest bitshift
 
@@ -21,13 +23,28 @@
   (testing "repl"
     (->
       (read-program!
-        (byte-array [0x61 1 0x62 2 0x63 3]))
+        (byte-array 
+          [
+            ; Store 1 in reg1
+            0x61 0x01 
+            ; Store 2 in reg2
+            0x62 0x02 
+            ; Store 3 in reg3
+            0x63 0x03
+            ; Add 1 to reg4
+            0x74 0x01
+            ; Ovewrite reg3 with reg1's value
+            0x83 0x10
+            ; Add reg2 into reg3
+            0x83 0x24
+          ]
+        ))
       (execute!)
       (get :registers)
       (= 
         (merge 
           stock-registers 
-          {1 1 2 2 3 3}))
+          {1 1 2 2 3 3 4 1}))
       (is)))
 
 )
@@ -137,6 +154,23 @@
       ; borrow flag
       (as->
         (get-in (op8-subtract s2 1 2) [:registers]) $
+        (and (= 4 ($ 1)) (= 0 ($ 0xF)))
+        (is $)))))
+
+  (testing "op8: SUBTRACT 2 registers - FLIPPED"
+    (let [
+      s1 (update-in @vm [:registers] merge {1 8 2 12})
+      s2 (update-in @vm [:registers] merge {1 4 2 8})
+    ]
+    (do
+      ; No borrow 
+      (as->
+        (get-in (op8-subtract-flipped s1 1 2) [:registers]) $
+        (and (= 4 ($ 1)) (= 1 ($ 0xF)))
+        (is $))
+      ; borrow flag
+      (as->
+        (get-in (op8-subtract-flipped s2 1 2) [:registers]) $
         (and (= 4 ($ 1)) (= 0 ($ 0xF)))
         (is $)))))
 
