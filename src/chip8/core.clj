@@ -1,8 +1,6 @@
 (ns chip8.core
   (:gen-class))
 
-(def stack-frame nil)
-
 (def vm (atom {
   :memory []
   ;:registers (zipmap (range 0x0 0x10) (repeat 0xF 0))
@@ -52,6 +50,9 @@
       (* 0x100 (read-memory state instr-ptr))
       (read-memory state (inc instr-ptr))))))
 
+(defn skip-nxt-instruction [state]
+  (update-in state [:pc] (partial + 2)))
+
 ; Registers     
 
 (defn read-register [state register]
@@ -61,6 +62,21 @@
   (update-in state [:registers register] #(value-fn %)))
 
 ; Opcodes
+
+(defn op3 [state register constant]
+  (if (= register constant)
+    (skip-nxt-instruction state)
+    state))
+
+(defn op4 [state register constant]
+  (if (not (= register constant))
+    (skip-nxt-instruction state)
+    state))
+
+(defn op5 [state reg1 reg2]
+  (if (= reg1 reg2)
+    (skip-nxt-instruction state)
+    state))
 
 ; Writes constant to register
 (defn op6 [state register constant]
@@ -161,6 +177,27 @@
 
 ; Instruction parsing
 
+(defn op3-family [word]
+  (let [
+    reg (get-nibble word 2)
+    constant (get-byte word 2)
+  ]
+    (list op3 reg constant)))
+
+(defn op4-family [word]
+  (let [
+    reg (get-nibble word 2)
+    constant (get-byte word 2)
+  ]
+    (list op4 reg constant)))
+
+(defn op5-family [word]
+  (let [
+    reg1 (get-nibble word 2)
+    reg2 (get-nibble word 3)
+  ]
+    (list op5 reg1 reg2)))
+
 (defn op6-family [word]
   (let [
     reg (get-nibble word 2)
@@ -200,9 +237,9 @@
     0 nil
     1 nil
     2 nil
-    3 nil
-    4 nil
-    5 nil
+    3 (op3-family word)
+    4 (op4-family word)
+    5 (op5-family word)
     6 (op6-family word)
     7 (op7-family word)
     8 (op8-family word)

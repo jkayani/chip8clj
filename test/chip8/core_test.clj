@@ -37,6 +37,19 @@
             0x83 0x10
             ; Add reg2 into reg3
             0x83 0x24
+            ; Skip next instruction since reg1 equals 1
+            0x31 0x01
+            ; An instruction meant to be skipped (store 255 into reg1)
+            0x61 0xFF
+            ; Skip next instruction since reg1 doesn't equal 2
+            0x41 0x02
+            ; An instruction meant to be skipped (store 255 into reg1)
+            0x61 0xFF
+            ; Don't Skip next instruction since reg1 doesn't equal reg2
+            0x51 0x20
+            ; An instruction not meant to be skipped (store 1 into reg5)
+            0x65 0xFF
+        
           ]
         ))
       (execute!)
@@ -44,7 +57,7 @@
       (= 
         (merge 
           stock-registers 
-          {1 1 2 2 3 3 4 1}))
+          {1 1 2 2 3 3 4 1 5 0xFF}))
       (is)))
 
 )
