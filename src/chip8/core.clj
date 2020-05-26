@@ -7,15 +7,18 @@
   :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
   :address-register 0x0000
   :pc 0
-  :stack '()
+  :stack '(0xFFF)
   :delay-timer nil
   :sound-timer nil
 }))
 
 ; Utilities
 
-(defn byte-it [double-word]
-  (bit-and double-word 0xFF))
+(defn byte-it [n]
+  (bit-and n 0xFF))
+
+(defn word-it [n]
+  (bit-and n 0xFFFF))
 
 (defn get-byte [x n]
     (case n
@@ -45,13 +48,27 @@
   (let [
     instr-ptr (state :pc)
   ]
-    (do (print instr-ptr (state :memory instr-ptr))
+    (do 
     (+ 
       (* 0x100 (read-memory state instr-ptr))
       (read-memory state (inc instr-ptr))))))
 
 (defn skip-nxt-instruction [state]
   (update-in state [:pc] (partial + 2)))
+
+(defn call-subroutine [state addr]
+  (->
+    (update-in state [:stack] #(cons (partial (+ 2 (state :pc))) %))
+    (assoc :pc (- addr 2)))) 
+
+(defn exit-subroutine [state]
+  (let [
+    stack (state :stack)
+    nxt-addr (first stack)
+  ]
+    (->
+      (update-in state [:stack] #(rest %))
+      (assoc :pc (- nxt-addr 2)))))
 
 ; Registers     
 
@@ -177,6 +194,12 @@
 
 ; Instruction parsing
 
+(defn op0-family [word]
+  (list exit-subroutine))
+
+(defn op2-family [word]
+  (list call-subroutine (bit-and 0xFFF word)))
+
 (defn op3-family [word]
   (let [
     reg (get-nibble word 2)
@@ -232,11 +255,12 @@
     nil)))
 
 (defn choose-opcode [word]
+  (do 
   (case 
     (get-nibble word 1)
-    0 nil
+    0 (op0-family word)
     1 nil
-    2 nil
+    2 (op2-family word)
     3 (op3-family word)
     4 (op4-family word)
     5 (op5-family word)
@@ -244,7 +268,7 @@
     7 (op7-family word)
     8 (op8-family word)
     9 nil
-    nil))
+    nil)))
     
 ; I/O execution
 
@@ -280,16 +304,20 @@
           (let [
             nxt-instr (fetch-nxt-instruction state)
             nxt-opcode (choose-opcode nxt-instr)
-            nxt-state (apply (first nxt-opcode) (cons state (rest nxt-opcode)))
+            nxt-state 
+            (do 
+              (println (read-memory state (state :pc)))
+              (println nxt-instr) 
+              (apply (first nxt-opcode) (cons state (rest nxt-opcode))))
           ]
             (do
-              (print nxt-instr)
+              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
               (print nxt-opcode)
-              (print nxt-state )
+              (print nxt-state)
               (update-in nxt-state [:pc] + 2))))
     ]
     (do
-      (println "\n")
+      (println "\n\n")
       ;(print "Nxt state: " nxt-state "\n\n")
       (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
         new-state

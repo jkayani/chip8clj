@@ -27,6 +27,8 @@
           [
             ; Store 1 in reg1
             0x61 0x01 
+            ; Call subroutine
+            0x20 0x1c
             ; Store 2 in reg2
             0x62 0x02 
             ; Store 3 in reg3
@@ -49,7 +51,15 @@
             0x51 0x20
             ; An instruction not meant to be skipped (store 1 into reg5)
             0x65 0xFF
-        
+            ; Skip next instruction if subroutine hasn't been called
+            0x4E 0xFF
+            ; Jump FAR away if reg E is FF
+            ; TODO uncomment this to fix program
+            ;0x1F 0xFF
+            ; Start subroutine to set reg E to FF
+            0x6E 0xFF
+            ; End subroutine
+            0x00 0xEE
           ]
         ))
       (execute!)
@@ -57,7 +67,12 @@
       (= 
         (merge 
           stock-registers 
-          {1 1 2 2 3 3 4 1 5 0xFF}))
+          {1 1 
+           2 2 
+           3 3 
+           4 1 
+           5 0xFF 
+           0xE 0xFF}))
       (is)))
 
 )
