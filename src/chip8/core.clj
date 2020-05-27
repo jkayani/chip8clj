@@ -6,7 +6,7 @@
   :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
   :address-register 0x0000
   :pc 0
-  :stack '(0xFFF)
+  :stack '()
   :delay-timer nil
   :sound-timer nil
 }))

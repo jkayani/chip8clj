@@ -51,11 +51,8 @@
             0x51 0x20
             ; An instruction not meant to be skipped (store 1 into reg5)
             0x65 0xFF
-            ; Skip next instruction if subroutine hasn't been called
-            0x4E 0xFF
-            ; Jump FAR away if reg E is FF
-            ; TODO uncomment this to fix program
-            ;0x1F 0xFF
+            ; Jump FAR away since subroutine was already called
+            0x1F 0xFF
             ; Start subroutine to set reg E to FF
             0x6E 0xFF
             ; End subroutine
