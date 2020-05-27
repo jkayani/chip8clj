@@ -82,17 +82,17 @@
 ; Opcodes
 
 (defn op3 [state register constant]
-  (if (= register constant)
+  (if (= (read-register state register) constant)
     (skip-nxt-instruction state)
     state))
 
 (defn op4 [state register constant]
-  (if (not (= register constant))
+  (if (not (= (read-register state register) constant))
     (skip-nxt-instruction state)
     state))
 
 (defn op5 [state reg1 reg2]
-  (if (= reg1 reg2)
+  (if (= (read-register state reg1) (read-register state reg2))
     (skip-nxt-instruction state)
     state))
 

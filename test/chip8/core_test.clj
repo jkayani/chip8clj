@@ -27,8 +27,8 @@
           [
             ; Store 1 in reg1
             0x61 0x01 
-            ; Call subroutine
-            0x20 0x1c
+            ; Call subroutine A
+            0x20 0x28
             ; Store 2 in reg2
             0x62 0x02 
             ; Store 3 in reg3
@@ -39,24 +39,46 @@
             0x83 0x10
             ; Add reg2 into reg3
             0x83 0x24
-            ; Skip next instruction since reg1 equals 1
-            0x31 0x01
-            ; An instruction meant to be skipped (store 255 into reg1)
-            0x61 0xFF
-            ; Skip next instruction since reg1 doesn't equal 2
-            0x41 0x02
-            ; An instruction meant to be skipped (store 255 into reg1)
-            0x61 0xFF
-            ; Don't Skip next instruction since reg1 doesn't equal reg2
-            0x51 0x20
-            ; An instruction not meant to be skipped (store 1 into reg5)
-            0x65 0xFF
+
+            ; Skips - fail if reg1 has value 255
+
+              ; Skip next instruction since reg1 equals 1
+              0x31 0x01
+              ; An instruction meant to be skipped (store 255 into reg1)
+              0x61 0xFF
+
+              ; Skip next instruction since reg0 equals 0
+              0x30 0x00
+              ; An instruction meant to be skipped (store 255 into reg1)
+              0x61 0xFF
+
+              ; Skip next instruction since reg1 doesn't equal 2
+              0x41 0x02
+              ; An instruction meant to be skipped (store 255 into reg1)
+              0x61 0xFF
+
+              ; Skip next instruction since reg4 doesn't equal 4
+              0x44 0x04
+              ; An instruction meant to be skipped (store 255 into reg1)
+              0x61 0xFF
+
+              ; Don't Skip next instruction since reg1 doesn't equal reg2
+              0x51 0x20
+              ; An instruction not meant to be skipped (store FF into reg5)
+              0x65 0xFF
+
+              ; Don't Skip next instruction since reg4 doesn't equal reg2 (2) 
+              0x54 0x20
+              ; An instruction not meant to be skipped (store 0 into reg5)
+              0x65 0x00
+
             ; Jump FAR away since subroutine was already called
             0x1F 0xFF
-            ; Start subroutine to set reg E to FF
-            0x6E 0xFF
-            ; End subroutine
-            0x00 0xEE
+
+            ; Subroutine A
+              0x6E 0xFF
+              ; End subroutine
+              0x00 0xEE
           ]
         ))
       (execute!)
@@ -68,7 +90,7 @@
            2 2 
            3 3 
            4 1 
-           5 0xFF 
+           5 0 
            0xE 0xFF}))
       (is)))
 
