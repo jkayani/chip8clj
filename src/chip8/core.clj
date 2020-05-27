@@ -3,7 +3,6 @@
 
 (def vm (atom {
   :memory []
-  ;:registers (zipmap (range 0x0 0x10) (repeat 0xF 0))
   :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
   :address-register 0x0000
   :pc 0
@@ -63,12 +62,14 @@
 
 (defn exit-subroutine [state]
   (let [
-    stack (state :stack)
-    nxt-addr (first stack)
+    nxt-addr (first (state :stack))
   ]
     (->
       (update-in state [:stack] #(rest %))
       (assoc :pc (- nxt-addr 2)))))
+
+(defn jump-to-addr [state addr]
+  (assoc state :pc addr))
 
 ; Registers     
 
@@ -194,80 +195,71 @@
 
 ; Instruction parsing
 
+(defn const-opcode [word]
+  "For opcodes with no input"
+  (list word))
+
+(defn addr-opcode [word]
+  "For opcodes with an address input"
+  (list (bit-and word 0xFFF)))
+
+(defn reg-constant-opcode [word]
+  "For opcodes with 1 register and 1 constant as input"
+  (list 
+    (get-nibble word 2)
+    (get-byte word 2)))
+
+(defn double-reg-opcode [word]
+  "For opcodes with 2 registers as input"
+  (list 
+    (get-nibble word 2)
+    (get-nibble word 3)))
+
+(defn double-reg-constant-opcode [word]
+  "For opcodes with 2 registers and a constant as input"
+  (list 
+    (get-nibble word 2)
+    (get-nibble word 3)
+    (get-nibble word 4)))
+
 (defn op0-family [word]
   (list exit-subroutine))
 
-(defn op2-family [word]
-  (list call-subroutine (bit-and 0xFFF word)))
-
-(defn op3-family [word]
-  (let [
-    reg (get-nibble word 2)
-    constant (get-byte word 2)
-  ]
-    (list op3 reg constant)))
-
-(defn op4-family [word]
-  (let [
-    reg (get-nibble word 2)
-    constant (get-byte word 2)
-  ]
-    (list op4 reg constant)))
-
-(defn op5-family [word]
-  (let [
-    reg1 (get-nibble word 2)
-    reg2 (get-nibble word 3)
-  ]
-    (list op5 reg1 reg2)))
-
-(defn op6-family [word]
-  (let [
-    reg (get-nibble word 2)
-    constant (get-byte word 2)
-  ]
-   (list op6 reg constant)))
-
-(defn op7-family [word]
-  (let [
-    reg (get-nibble word 2)
-    constant (get-byte word 2)
-  ]
-   (list op7 reg constant)))
-
 (defn op8-family [word]
   (let [
-    reg1 (get-nibble word 2)
-    reg2 (get-nibble word 3)
-    op (get-nibble word 4)
+    code (get-nibble word 4)
+    ops {
+      0 op8-assign
+      1 op8-or
+      2 op8-and
+      3 op8-xor
+      4 op8-add
+      5 op8-subtract
+      6 op8-shift-right-std
+      7 op8-subtract-flipped
+      0xE op8-shift-left-std
+    }
+    operation (ops code)
   ]
-   (case
-    op
-    0 (list op8-assign reg1 reg2)
-    1 (list op8-or reg1 reg2)
-    2 (list op8-and reg1 reg2)
-    3 (list op8-xor reg1 reg2)
-    4 (list op8-add reg1 reg2)
-    5 (list op8-subtract reg1 reg2)
-    6 (list op8-shift-right-std reg1 reg2)
-    7 (list op8-subtract-flipped reg1 reg2)
-    0xE (list op8-shift-left-std reg1 reg2)
-    nil)))
+    (if (nil? operation)
+      (list nil)
+      (cons operation (double-reg-opcode word)))))
 
 (defn choose-opcode [word]
   (do 
   (case 
     (get-nibble word 1)
     0 (op0-family word)
-    1 nil
-    2 (op2-family word)
-    3 (op3-family word)
-    4 (op4-family word)
-    5 (op5-family word)
-    6 (op6-family word)
-    7 (op7-family word)
+    1 (cons jump-to-addr (addr-opcode word))
+    2 (cons call-subroutine (addr-opcode word))
+    3 (cons op3 (reg-constant-opcode word))
+    4 (cons op4 (reg-constant-opcode word))
+    5 (cons op5 (double-reg-opcode word))
+    6 (cons op6 (reg-constant-opcode word))
+    7 (cons op7 (reg-constant-opcode word))
     8 (op8-family word)
     9 nil
+    ;0xB (list jump-to-addr-offset (addr-opcode word))
     nil)))
     
 ; I/O execution
@@ -318,7 +310,6 @@
     ]
     (do
       (println "\n\n")
-      ;(print "Nxt state: " nxt-state "\n\n")
       (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
         new-state
         (recur @vm))))))
