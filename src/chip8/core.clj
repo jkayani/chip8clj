@@ -193,6 +193,17 @@
     (update-register state reg1 (constantly new-val))
     (update-register 0xF (constantly msb)))))
 
+(defn op9 [state reg1 reg2]
+  (if (not (= (read-register state reg1) (read-register state reg2)))
+    (skip-nxt-instruction state)
+    state))
+
+(defn opB [state addr]
+  (->>
+    (read-register state 0)
+    (+ addr)
+    (jump-to-addr state)))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -258,8 +269,8 @@
     6 (cons op6 (reg-constant-opcode word))
     7 (cons op7 (reg-constant-opcode word))
     8 (op8-family word)
-    9 nil
-    ;0xB (list jump-to-addr-offset (addr-opcode word))
+    9 (cons op9 (double-reg-opcode word))
+    0xB (cons opB (addr-opcode word))
     nil)))
     
 ; I/O execution
