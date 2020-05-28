@@ -4,7 +4,7 @@
 (def vm (atom {
   :memory []
   :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
-  :address-register 0x0000
+  :I-addr 0x0000
   :pc 0
   :stack '()
   :delay-timer nil
@@ -70,6 +70,9 @@
 
 (defn jump-to-addr [state addr]
   (assoc state :pc addr))
+
+(defn set-I [state addr]
+  (assoc state :I-addr addr))
 
 ; Registers     
 
@@ -270,6 +273,7 @@
     7 (cons op7 (reg-constant-opcode word))
     8 (op8-family word)
     9 (cons op9 (double-reg-opcode word))
+    0xA (cons set-I (addr-opcode word))
     0xB (cons opB (addr-opcode word))
     nil)))
     

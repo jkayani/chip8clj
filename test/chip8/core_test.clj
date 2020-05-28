@@ -77,8 +77,8 @@
               ; An instruction meant to be skipped (store FF into reg5)
               0x65 0xFF
 
-            ; Jump FAR away 0xFFE + reg1 (1)
-            0x1F 0xFE
+            ; Jump FAR away 
+            0x1F 0xFF
 
               ; Subroutine A
               0x6E 0xFF
@@ -98,6 +98,23 @@
            5 0 
            0xE 0xFF}))
       (is)))
+
+)
+
+(deftest IAddress
+
+  (testing "setting I-Addr"
+
+    (do
+      (as->
+        (swap! vm assoc :memory
+          (byte-array [
+            0xAD 0xED
+          ])) $
+        (execute! $)
+        (get $ :I-addr)
+        (= 0xDED $)
+        (is $))))
 
 )
 
