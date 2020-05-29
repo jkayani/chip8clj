@@ -1,14 +1,16 @@
 (ns chip8.core
-  (:gen-class))
+  (:gen-class)
+  (:require [chip8.disp :refer :all]))
 
 (def vm (atom {
   :memory []
-  :registers (apply sorted-map (interleave (range 0x0 0x10) (repeat 0x10 0)))
+  :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
   :I-addr 0x0000
   :pc 0
   :stack '()
   :delay-timer nil
   :sound-timer nil
+  :display (vec (repeat (* 32 8) 0))
 }))
 
 ; Utilities
@@ -313,18 +315,21 @@
             nxt-opcode (choose-opcode nxt-instr)
             nxt-state 
             (do 
-              (println (read-memory state (state :pc)))
-              (println nxt-instr) 
+;              (println (read-memory state (state :pc)))
+;              (println nxt-instr) 
               (apply (first nxt-opcode) (cons state (rest nxt-opcode))))
           ]
             (do
-              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
-              (print nxt-opcode)
-              (print nxt-state)
+;              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
+;              (print nxt-opcode)
+;              (print nxt-state)
+              (print (render-screen nxt-state))
+              (beep)
               (update-in nxt-state [:pc] + 2))))
     ]
     (do
-      (println "\n\n")
+;      (println "\n\n")
+      (clear-screen)
       (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
         new-state
         (recur @vm))))))
