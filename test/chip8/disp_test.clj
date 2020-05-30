@@ -37,6 +37,34 @@
         (number-pixel-row 0xFF)
         (= (apply str (repeat 8 on-pixel)))
         (is))))
+
+  (testing "sprite-byte"
+    (do
+
+      (->
+        (sprite-byte @vm 25 5)
+        (= 43)
+        (is))
+
+      (->
+        (sprite-byte @vm 0 0)
+        (= 0)
+        (is))
+
+      (->
+        (sprite-byte @vm 63 0)
+        (= 7)
+        (is))
+
+      (->
+        (sprite-byte @vm 0 31)
+        (= 248)
+        (is))
+
+      (->
+        (sprite-byte @vm 63 31)
+        (= (dec 256))
+        (is))))
 )
 
 (deftest display

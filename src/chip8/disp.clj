@@ -10,8 +10,14 @@
 (defn beep []
   (sh "echo -ne '\007'"))
 
-(defn draw-sprite [state reg1 reg2 height]
-  state)
+(defn sprite-byte [state x y]
+  (->> (* y 8) (+ (quot x 8))))
+
+(defn update-display [state pixel-map]
+  (let [
+    old-display (state :display)
+  ]
+    (reduce-kv assoc old-display pixel-map)))
 
 (defn number-pixel-row [n]
   (let [

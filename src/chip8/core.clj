@@ -38,6 +38,14 @@
     4 (bit-and bite 0xF)
     nil)))
 
+; Registers     
+
+(defn read-register [state register]
+  (get-in state [:registers register]))
+
+(defn update-register [state register value-fn]
+  (update-in state [:registers register] #(value-fn %)))
+
 ; Memory
 
 (defn read-memory [state addr]
@@ -76,15 +84,28 @@
 (defn set-I [state addr]
   (assoc state :I-addr addr))
 
-; Registers     
+(defn draw-sprite [state reg1 reg2 height]
+ (let [
+    x (read-register state reg1)
+    y (read-register state reg2)
+    mem-origin (state :I-addr)
+    changed-pixel-idxs (map #(sprite-byte state x %) (range y (+ y height)))
+    changed-memory-addrs (range mem-origin (+ mem-origin height))
+    pixel-rows (map #((state :display) %) changed-pixel-idxs)
+    sprite-rows (map #(read-memory state %) changed-memory-addrs)
+    new-pixels (map bit-xor sprite-rows pixel-rows) 
+  ]
+    (do
+      (println changed-pixel-idxs)
+      (println changed-memory-addrs)
+      (println pixel-rows)
+      (println sprite-rows)
+      (println new-pixels)
+      (println (update-display state (zipmap changed-pixel-idxs new-pixels)))
+      (update-display state (zipmap changed-pixel-idxs new-pixels)))))
 
-(defn read-register [state register]
-  (get-in state [:registers register]))
 
-(defn update-register [state register value-fn]
-  (update-in state [:registers register] #(value-fn %)))
-
-; Opcodes
+  ; Opcodes
 
 (defn op3 [state register constant]
   (if (= (read-register state register) constant)
@@ -323,13 +344,10 @@
 ;              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
 ;              (print nxt-opcode)
 ;              (print nxt-state)
-              (print (render-screen nxt-state))
-              (beep)
+              (render-screen nxt-state)
               (update-in nxt-state [:pc] + 2))))
     ]
     (do
-;      (println "\n\n")
-      (clear-screen)
       (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
         new-state
         (recur @vm))))))

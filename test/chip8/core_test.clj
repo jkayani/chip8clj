@@ -101,39 +101,43 @@
 
 )
 
-(deftest IAddress
+(deftest displayIO
 
-  (testing "setting I-Addr"
+;  (testing "setting I-Addr"
+;
+;    (do
+;      (as->
+;        (swap! vm assoc :memory
+;          (byte-array [
+;            0xAD 0xED
+;          ])) $
+;        (execute! $)
+;        (get $ :I-addr)
+;        (= 0xDED $)
+;        (is $))))
 
-    (do
-      (as->
-        (swap! vm assoc :memory
-          (byte-array [
-            0xAD 0xED
-          ])) $
-        (execute! $)
-        (get $ :I-addr)
-        (= 0xDED $)
-        (is $))))
+  (testing "draw-sprite"
+    (let [
+      s (merge @vm {
+        :I-addr 0x0000
+        :memory (vec (take 100 (cycle (range 1 17))))
+      })
+      top-display
+        (->>
+          (map 
+            #(concat (list %) (repeat 7 0))
+            (range 1 16))
+          (reduce concat))
+      ; 15 rows will be drawn, so 17 should be untouched
+      bottom-display
+        (repeat (* 17 8) 0)
+    ]
+      (do
+        (-> 
+          (draw-sprite s 1 0 0xF)
+          (= (concat top-display bottom-display))
+          (is)))))
 
-)
-
-(deftest IO 
-
-  (testing "read program data"
-    (->> 
-      ((read-program! (byte-array [0x61 0x01 0x61 0x02])) :memory)
-      (= [0x61 0x01 0x61 0x02])
-      (is)))
-)
-
-(deftest OpcodeSelection
-  
-  (testing "op6"
-    (->> 
-      (choose-opcode 0x6101)
-      (= (list op6 1 1))
-      (is)))
 )
 
 (deftest Opcodes
