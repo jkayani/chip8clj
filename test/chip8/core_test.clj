@@ -133,20 +133,22 @@
         (repeat (* 17 8) 0)
     ]
       (do
-        (and
-          (-> 
-            (draw-sprite s 1 0 0xF)
-            (get :display)
-            (= (concat top-display bottom-display))
-            (is))
+          ; Draw sprite onto blank screen
+          (as-> 
+            (draw-sprite s 1 0 0xF) $
+            (and 
+              (= (concat top-display bottom-display) (get $ :display))
+              (= 0 (get-in $ [:registers 0xF])))
+            (is $))
           
           ; Try drawing the same sprite twice - should clear screen
-          (->
-            (draw-sprite s 1 0 0xF)
-            (draw-sprite 1 0 0xF)
-            (get :display)
-            (= (repeat (* 32 8) 0))
-            (is))))))
+          (as-> 
+            (draw-sprite s 1 0 0xF) $
+            (draw-sprite $ 1 0 0xF) 
+            (and 
+              (= (repeat (* 32 8) 0) (get $ :display))
+              (= 1 (get-in $ [:registers 0xF])))
+            (is $)))))
 
 )
 

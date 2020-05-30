@@ -94,7 +94,13 @@
     pixel-rows (map #((state :display) %) changed-pixel-idxs)
     sprite-rows (map #(read-memory state %) changed-memory-addrs)
     new-pixels (map bit-xor sprite-rows pixel-rows) 
-    ; TODO: Update value of VF register
+    pixels-flipped 
+     (->>
+       (map 
+         #(-> (bit-xor %1 %2) (bit-and %1))
+          pixel-rows
+          new-pixels)
+       (not-every? zero?))
   ]
     (do
 ;      (println changed-pixel-idxs)
@@ -103,7 +109,11 @@
 ;      (println sprite-rows)
 ;      (println new-pixels)
 ;      (println (update-display state (zipmap changed-pixel-idxs new-pixels)))
-      (update-display state (zipmap changed-pixel-idxs new-pixels)))))
+      (->
+        (update-display 
+          state 
+          (zipmap changed-pixel-idxs new-pixels))
+        (update-register 0xF (constantly (if pixels-flipped 1 0)))))))
 
 
   ; Opcodes
