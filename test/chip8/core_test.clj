@@ -20,8 +20,9 @@
 
 (deftest REPL
 
-  (testing "repl"
-    (->
+  (testing "INTEGRATION TEST: random instructions"
+    (swap! vm (constantly (new-vm)))
+    (as->
       (read-program!
         (byte-array 
           [
@@ -85,19 +86,21 @@
               ; End subroutine
               0x00 0xEE
           ]
-        ))
-      (execute!)
-      (get :registers)
-      (= 
-        (merge 
-          stock-registers 
-          {1 1 
-           2 2 
-           3 3 
-           4 1 
-           5 0 
-           0xE 0xFF}))
-      (is)))
+        )) $
+      (execute! $)
+      (do
+        (is 
+          (= (get $ :registers)
+            (merge 
+              stock-registers 
+              {1 1 
+               2 2 
+               3 3 
+               4 1 
+               5 0 
+               0xE 0xFF})))
+        (is
+          (= (get $ :pc) 0xFFF)))))
 
 )
 

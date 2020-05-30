@@ -2,16 +2,21 @@
   (:gen-class)
   (:require [chip8.disp :refer :all]))
 
-(def vm (atom {
-  :memory []
-  :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
-  :I-addr 0x0000
-  :pc 0
-  :stack '()
-  :delay-timer nil
-  :sound-timer nil
-  :display (vec (repeat (* 32 8) 0))
-}))
+(defn new-vm []
+  {
+    :memory []
+    :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
+    :I-addr 0x0000
+    :pc 0
+    :stack '()
+    :delay-timer nil
+    :sound-timer nil
+    :display (vec (repeat (* 32 8) 0))
+  })
+
+  
+
+(def vm (atom (new-vm)))
 
 ; Utilities
 
@@ -79,7 +84,7 @@
       (assoc :pc (- nxt-addr 2)))))
 
 (defn jump-to-addr [state addr]
-  (assoc state :pc addr))
+  (assoc state :pc (- addr 2)))
 
 (defn set-I [state addr]
   (assoc state :I-addr addr))
@@ -94,7 +99,7 @@
     pixel-rows (map #((state :display) %) changed-pixel-idxs)
     sprite-rows (map #(read-memory state %) changed-memory-addrs)
     new-pixels (map bit-xor sprite-rows pixel-rows) 
-    pixels-flipped 
+    pixels-flipped? 
      (->>
        (map 
          #(-> (bit-xor %1 %2) (bit-and %1))
@@ -113,7 +118,7 @@
         (update-display 
           state 
           (zipmap changed-pixel-idxs new-pixels))
-        (update-register 0xF (constantly (if pixels-flipped 1 0)))))))
+        (update-register 0xF (constantly (if pixels-flipped? 1 0)))))))
 
 
   ; Opcodes

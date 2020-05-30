@@ -72,9 +72,11 @@
 ;  (testing "rendering a blank screen"
 ;    (print (render-screen @vm)))
 
-  (testing "draw a sprite"
+  (testing "INTEGRATION test: draw a sprite"
     (let [
       instructions [
+        ; Set I to 10 (length of code)
+        0xA0 0x0A
         ; Draw a sprite at (reg0, reg0) (0, 0) with height 15
         0xD0 0x0F
         ; Load 15 into reg1
@@ -87,13 +89,9 @@
       ]
 
       sprite-data (range 0 32)
-
-      state (swap! vm merge {
-        :memory []
-        :I-addr (count instructions) 
-      })
     ]
       (do
+        (swap! vm (constantly (new-vm)))
         (->
           (read-program! (byte-array (concat instructions sprite-data)))
           (execute!))))) 
