@@ -69,8 +69,28 @@
 
 (deftest display
 
-;  (testing "rendering a blank screen"
-;    (print (render-screen @vm)))
+  (testing "INTEGRATION test: clear screen"
+    (let [
+      instructions [
+        ; Set I to length of code
+        0xA0 0x08
+        ; Draw a sprite at (reg0, reg0) (0, 0) with height 15
+        0xD0 0x0F
+        ; Clear screen
+        0x00 0xE0
+        ; Jump FAR away
+        0x1F 0xFF
+      ]
+
+      sprite-data (range 0 32)
+    ]
+      (do
+        (swap! vm (constantly (new-vm)))
+        (as->
+          (read-program! (byte-array (concat instructions sprite-data))) $
+          (execute! $)
+          (do
+            (is (= (repeat (* 32 8) 0) (get $ :display))))))))
 
   (testing "INTEGRATION test: draw a sprite"
     (let [

@@ -2,14 +2,6 @@
   (:gen-class)
   (:use [clojure.java.shell :only [sh]]))
 
-(defn thing [arg] arg)
-
-(defn clear-screen []
-  (sh "clear"))
-
-(defn beep []
-  (sh "echo -ne '\007'"))
-
 (defn sprite-byte [state x y]
   (->> (* y 8) (+ (quot x 8))))
 

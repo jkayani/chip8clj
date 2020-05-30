@@ -14,8 +14,6 @@
     :display (vec (repeat (* 32 8) 0))
   })
 
-  
-
 (def vm (atom (new-vm)))
 
 ; Utilities
@@ -120,8 +118,12 @@
           (zipmap changed-pixel-idxs new-pixels))
         (update-register 0xF (constantly (if pixels-flipped? 1 0)))))))
 
+(defn clear-screen [state]
+  (->>
+    ((new-vm) :display)
+    (assoc state :display)))
 
-  ; Opcodes
+; Opcodes
 
 (defn op3 [state register constant]
   (if (= (read-register state register) constant)
@@ -276,7 +278,10 @@
     (get-nibble word 4)))
 
 (defn op0-family [word]
-  (list exit-subroutine))
+  (case 
+    (get-nibble word 4)
+    0x0 (list clear-screen)
+    0xE (list exit-subroutine)))
 
 (defn op8-family [word]
   (let [
