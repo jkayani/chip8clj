@@ -96,12 +96,12 @@
     new-pixels (map bit-xor sprite-rows pixel-rows) 
   ]
     (do
-      (println changed-pixel-idxs)
-      (println changed-memory-addrs)
-      (println pixel-rows)
-      (println sprite-rows)
-      (println new-pixels)
-      (println (update-display state (zipmap changed-pixel-idxs new-pixels)))
+;      (println changed-pixel-idxs)
+;      (println changed-memory-addrs)
+;      (println pixel-rows)
+;      (println sprite-rows)
+;      (println new-pixels)
+;      (println (update-display state (zipmap changed-pixel-idxs new-pixels)))
       (update-display state (zipmap changed-pixel-idxs new-pixels)))))
 
 
@@ -298,6 +298,7 @@
     9 (cons op9 (double-reg-opcode word))
     0xA (cons set-I (addr-opcode word))
     0xB (cons opB (addr-opcode word))
+    0xD (cons draw-sprite (double-reg-constant-opcode word))
     nil)))
     
 ; I/O execution
@@ -336,15 +337,16 @@
             nxt-opcode (choose-opcode nxt-instr)
             nxt-state 
             (do 
-;              (println (read-memory state (state :pc)))
-;              (println nxt-instr) 
+              (println (read-memory state (state :pc)))
+              (println nxt-instr) 
               (apply (first nxt-opcode) (cons state (rest nxt-opcode))))
           ]
             (do
-;              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
-;              (print nxt-opcode)
-;              (print nxt-state)
-              (render-screen nxt-state)
+              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
+              (print nxt-opcode)
+              (print nxt-state)
+              (println "\nDisplay Output:\n")
+              (print (render-screen nxt-state))
               (update-in nxt-state [:pc] + 2))))
     ]
     (do

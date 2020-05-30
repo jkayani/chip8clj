@@ -103,18 +103,18 @@
 
 (deftest displayIO
 
-;  (testing "setting I-Addr"
-;
-;    (do
-;      (as->
-;        (swap! vm assoc :memory
-;          (byte-array [
-;            0xAD 0xED
-;          ])) $
-;        (execute! $)
-;        (get $ :I-addr)
-;        (= 0xDED $)
-;        (is $))))
+  (testing "setting I-Addr"
+
+    (do
+      (as->
+        (swap! vm assoc :memory
+          (byte-array [
+            0xAD 0xED
+          ])) $
+        (execute! $)
+        (get $ :I-addr)
+        (= 0xDED $)
+        (is $))))
 
   (testing "draw-sprite"
     (let [

@@ -69,8 +69,34 @@
 
 (deftest display
 
-  (testing "rendering a blank screen"
-    (print (render-screen @vm)))
+;  (testing "rendering a blank screen"
+;    (print (render-screen @vm)))
+
+  (testing "draw a sprite"
+    (let [
+      instructions [
+        ; Draw a sprite at (reg0, reg0) (0, 0) with height 15
+        0xD0 0x0F
+        ; Load 15 into reg1
+        0x61 0x0F
+        ; Set I to 16 -> onward sprite data
+        0xA0 0x1A
+        ; Draw a sprite at (reg0, reg1) (0, 15) with height 15
+        0xD0 0x1F
+        0x1F 0xFF
+      ]
+
+      sprite-data (range 0 32)
+
+      state (swap! vm merge {
+        :memory []
+        :I-addr (count instructions) 
+      })
+    ]
+      (do
+        (->
+          (read-program! (byte-array (concat instructions sprite-data)))
+          (execute!))))) 
 
 )
 

@@ -17,7 +17,8 @@
   (let [
     old-display (state :display)
   ]
-    (reduce-kv assoc old-display pixel-map)))
+    (assoc state :display 
+      (reduce-kv assoc old-display pixel-map))))
 
 (defn number-pixel-row [n]
   (let [
