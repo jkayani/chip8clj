@@ -14,7 +14,7 @@
 
 (defn number-pixel-row [n]
   (let [
-    on-pixel ".."
+    on-pixel "▪▪"
     off-pixel "  "
   ]
     (loop [row '() pixel n bits-left 8]

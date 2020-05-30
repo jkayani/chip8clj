@@ -4,10 +4,10 @@
 
 (defn new-vm []
   {
-    :memory []
+    :memory (repeat 0x200 0)
     :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
     :I-addr 0x0000
-    :pc 0
+    :pc 0x200
     :stack '()
     :delay-timer nil
     :sound-timer nil
@@ -326,11 +326,13 @@
 
 (defn load-program! [program] 
   (swap! vm
-    update-in [:memory] 
-      (->> 
-        program 
-        (vec) 
-        (constantly))))
+    update-in [:memory]
+    (fn [curr-memory]
+      (->>
+        (vec program) 
+        (concat curr-memory)
+        (vec)))))
+
 
 (defmulti read-program! 
   #(if (= String (class %)) "path" "data"))
@@ -339,10 +341,11 @@
     (let [
         program (byte-array (int 1e3)) 
       ]
-      (->
-        (new java.io.FileInputStream path)
-        (.read program))
-        (load-program!)))
+      (do
+        (->
+          (new java.io.FileInputStream path)
+          (.read program))
+        (load-program! program))))
 
   (defmethod read-program! "data" [data]
     (load-program! data))
@@ -358,15 +361,15 @@
             nxt-opcode (choose-opcode nxt-instr)
             nxt-state 
             (do 
-              (println (read-memory state (state :pc)))
-              (println nxt-instr) 
+;              (println (read-memory state (state :pc)))
+;              (println nxt-instr) 
               (apply (first nxt-opcode) (cons state (rest nxt-opcode))))
           ]
             (do
-              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
-              (print nxt-opcode)
-              (print nxt-state)
-              (println "\nDisplay Output:\n")
+;              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
+;              (print nxt-opcode)
+;              (print nxt-state)
+;              (println "\nDisplay Output:\n")
               (print (render-screen nxt-state))
               (update-in nxt-state [:pc] + 2))))
     ]
@@ -379,6 +382,7 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (->>
-    (read-program! (args 0))
-    (execute!)))
+  (do
+    (->>
+      (read-program! (first args))
+      (execute!))))
