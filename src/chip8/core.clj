@@ -94,6 +94,7 @@
     pixel-rows (map #((state :display) %) changed-pixel-idxs)
     sprite-rows (map #(read-memory state %) changed-memory-addrs)
     new-pixels (map bit-xor sprite-rows pixel-rows) 
+    ; TODO: Update value of VF register
   ]
     (do
 ;      (println changed-pixel-idxs)

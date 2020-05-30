@@ -133,10 +133,20 @@
         (repeat (* 17 8) 0)
     ]
       (do
-        (-> 
-          (draw-sprite s 1 0 0xF)
-          (= (concat top-display bottom-display))
-          (is)))))
+        (and
+          (-> 
+            (draw-sprite s 1 0 0xF)
+            (get :display)
+            (= (concat top-display bottom-display))
+            (is))
+          
+          ; Try drawing the same sprite twice - should clear screen
+          (->
+            (draw-sprite s 1 0 0xF)
+            (draw-sprite 1 0 0xF)
+            (get :display)
+            (= (repeat (* 32 8) 0))
+            (is))))))
 
 )
 
