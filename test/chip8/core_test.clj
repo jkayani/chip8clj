@@ -107,52 +107,68 @@
 (deftest displayIO
 
   (testing "setting I-Addr"
-
+    (let [
+      code [0xA2 0xED]
+    ]
     (do
       (as->
-        (swap! vm assoc :memory
-          (byte-array [
-            0xAD 0xED
-          ])) $
+        (update-in (new-vm) [:memory] #(-> (concat %1 %2) (vec)) code) $
         (execute! $)
         (get $ :I-addr)
-        (= 0xDED $)
-        (is $))))
+        (= 0x2ED $)
+        (is $)))))
 
-  (testing "draw-sprite"
+  (testing "opcode: draw-sprite"
     (let [
-      s (merge @vm {
-        :I-addr 0x0000
-        :memory (vec (take 100 (cycle (range 1 17))))
-      })
+      sprite-data (repeat 0xF 0xFF)
+      s (->
+          (assoc (new-vm) :I-addr 0x0200)
+          (update-in [:memory] #(-> (concat %1 %2) (vec)) sprite-data))
       top-display
-        (->>
-          (map 
-            #(concat (list %) (repeat 7 0))
-            (range 1 16))
-          (reduce concat))
-      ; 15 rows will be drawn, so 17 should be untouched
+        (->
+          (repeat
+            15
+            (concat (repeat 8 1) (repeat (- 64 8) 0)))
+          (flatten))
+      ; 15 screen rows will be drawn on, so 17 should be untouched
       bottom-display
-        (repeat (* 17 8) 0)
+        (repeat (* 17 64) 0)
     ]
-      (do
+      (do 
           ; Draw sprite onto blank screen
-          (as-> 
-            (draw-sprite s 1 0 0xF) $
-            (and 
-              (= (concat top-display bottom-display) (get $ :display))
-              (= 0 (get-in $ [:registers 0xF])))
-            (is $))
+          (-> 
+            (draw-sprite s 0 0 0xF) 
+            (get :display)
+            (= (concat top-display bottom-display))
+            (is))
+
+          ; Draw sprite onto blank screen, 
+          ; expect VF = 0 since no prev. on pixels were turned off
+          (-> 
+            (draw-sprite s 0 0 0xF) 
+            (get-in [:registers 0xF])
+            (= 0)
+            (is))
+    
           
           ; Try drawing the same sprite twice - should clear screen
-          (as-> 
-            (draw-sprite s 1 0 0xF) $
-            (draw-sprite $ 1 0 0xF) 
-            (and 
-              (= (repeat (* 32 8) 0) (get $ :display))
-              (= 1 (get-in $ [:registers 0xF])))
-            (is $)))))
+          (-> 
+            (draw-sprite s 0 0 0xF) 
+            (draw-sprite 0 0 0xF) 
+            (get :display)
+            (= 
+              (-> 
+                (repeat (* 32 64) 0)
+                (flatten)))
+            (is))
 
+          ; Expect VF = 1 since all prev. on pixels were turned off
+          (-> 
+            (draw-sprite s 0 0 0xF) 
+            (draw-sprite 0 0 0xF) 
+            (get-in [:registers 0xF])
+            (= 1)
+            (is)))))
 )
 
 (deftest Opcodes

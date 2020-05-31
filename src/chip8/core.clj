@@ -11,7 +11,7 @@
     :stack '()
     :delay-timer nil
     :sound-timer nil
-    :display (vec (repeat (* 32 8) 0))
+    :display (vec (repeat (* 64 32) 0))
   })
 
 (def vm (atom (new-vm)))
@@ -92,30 +92,38 @@
     x (read-register state reg1)
     y (read-register state reg2)
     mem-origin (state :I-addr)
-    changed-pixel-idxs (map #(sprite-byte state x %) (range y (+ y height)))
     changed-memory-addrs (range mem-origin (+ mem-origin height))
-    pixel-rows (map #((state :display) %) changed-pixel-idxs)
-    sprite-rows (map #(read-memory state %) changed-memory-addrs)
-    new-pixels (map bit-xor sprite-rows pixel-rows) 
+    sprite-data (map #(read-memory state %) changed-memory-addrs)
+    changed-pixel-start-addrs (map #(pixel-addr x %) (range y (+ y height)))
+    old-pixel-data
+      (map 
+        #(->>
+          (subvec (state :display) % (+ % 8))
+          (pixel-value))
+        changed-pixel-start-addrs)
+    new-pixel-data (map bit-xor sprite-data old-pixel-data) 
     pixels-flipped? 
      (->>
        (map 
          #(-> (bit-xor %1 %2) (bit-and %1))
-          pixel-rows
-          new-pixels)
+          old-pixel-data
+          new-pixel-data)
        (not-every? zero?))
   ]
     (do
-;      (println changed-pixel-idxs)
-;      (println changed-memory-addrs)
-;      (println pixel-rows)
-;      (println sprite-rows)
-;      (println new-pixels)
-;      (println (update-display state (zipmap changed-pixel-idxs new-pixels)))
+      (println changed-memory-addrs)
+      (println sprite-data)
+      (println changed-pixel-start-addrs)
+      (println old-pixel-data)
+      (println new-pixel-data)
+      (println pixels-flipped?)
+;       (print "done"))))
+
+;      (println (update-display state (zipmap changed-pixel-start-addrs new-pixel-data))))))
       (->
         (update-display 
           state 
-          (zipmap changed-pixel-idxs new-pixels))
+          (zipmap changed-pixel-start-addrs new-pixel-data))
         (update-register 0xF (constantly (if pixels-flipped? 1 0)))))))
 
 (defn clear-screen [state]
@@ -370,10 +378,12 @@
 ;              (print nxt-opcode)
 ;              (print nxt-state)
 ;              (println "\nDisplay Output:\n")
-              (print (render-screen nxt-state))
+;               (println (nxt-state :display))
+              (printf "%s\r\n" (render-screen nxt-state))
               (update-in nxt-state [:pc] + 2))))
     ]
     (do
+      (clean-sh)
       (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
         new-state
         (recur @vm))))))
