@@ -1,6 +1,7 @@
 (ns chip8.disp
   (:gen-class)
-  (:use [clojure.java.shell :only [sh]]))
+  (:use [clojure.java.shell :only [sh]])
+  (:require [chip8.utils :refer :all]))
 
 (defn clean-sh []
   (sh "clear"))
@@ -8,22 +9,25 @@
 (defn pixel-addr [x y]
   (+ x (* y 64)))
 
-(defn sprite-byte [state x y]
-  (->> (* y 8) (+ (quot x 8))))
-
 (defn bin-vec [n]
-  (loop [bits '() base n]
-    (if (zero? base)
-      (->>
-        (repeat (- 8 (count bits)) 0)
-        (concat bits)
-        (reverse))
-      (recur
-        (cons (if (zero? (rem base 2)) 0 1) bits)
-        (quot base 2)))))
+  (loop [
+    v '() 
+    base (byte-it n) 
+    bits-left 8
+  ]
+    (if (= 0 bits-left)
+      v
+      (recur 
+        (cons (bit-and base 0x1) v)
+        (byte-it (bit-shift-right base 1))
+        (dec bits-left)))))
 
 (defn pixel-value [slice]
-  (loop [bit 7 n 0 i 0]
+  (loop [
+    bit 7 
+    n 0 
+    i 0
+  ]
     (if (> i 7)
       n
       (recur 
@@ -49,30 +53,19 @@
     (assoc state :display 
       (reduce-kv assoc old-display changes))))
 
-(defn number-pixel-row [n]
-  (let [
-    on-pixel "▪▪"
-    off-pixel "  "
-  ]
-    (loop [row '() pixel n bits-left 8]
-      (if (= 0 bits-left)
-        (reduce str row)
-        (recur 
-          (cons (if (= 1 (bit-and pixel 0x1)) on-pixel off-pixel) row)
-          (bit-shift-right pixel 1)
-          (dec bits-left))))))
-
 (defn render-screen [state]
   (let [
-    on-pixel "▪▪"
+    on-pixel "◼◼"
     off-pixel "  "
     screen (state :display)
     rows (partition 64 screen)
     pixel-value #(if (zero? %) off-pixel on-pixel)
   ]
-  (do 
-    (->>
-      (map 
-        #(->> (map pixel-value %) (reduce str))
-        rows)
-      (reduce #(str %1 "\n" %2))))))
+    (do 
+      (->>
+        (map
+          (fn [row]
+            (do
+              (->> (map pixel-value row) (reduce str))))
+            rows)
+          (reduce #(str %1 "\n" %2))))))

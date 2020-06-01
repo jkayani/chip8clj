@@ -73,7 +73,7 @@
     (let [
       instructions [
         ; Set I to length of code
-        0xA0 0x08
+        0xA2 0x08
         ; Draw a sprite at (reg0, reg0) (0, 0) with height 15
         0xD0 0x0F
         ; Clear screen
@@ -90,7 +90,7 @@
           (read-program! (byte-array (concat instructions sprite-data))) $
           (execute! $)
           (do
-            (is (= (repeat (* 32 8) 0) (get $ :display))))))))
+            (is (= (repeat (* 32 64) 0) (get $ :display))))))))
 
   (testing "INTEGRATION test: draw a sprite"
     (let [
