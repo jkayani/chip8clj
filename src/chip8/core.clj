@@ -50,7 +50,6 @@
 ;              (print nxt-state)
 ;              (println "\nDisplay Output:\n")
               (printf "%s\r\n" (render-screen nxt-state))
-;              (render-screen nxt-state)
               (update-in nxt-state [:pc] + 2))))
     ]
       (do
