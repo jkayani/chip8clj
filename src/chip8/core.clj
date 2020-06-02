@@ -48,8 +48,6 @@
 ;              (printf "Instruction: %s\n" (Integer/toHexString nxt-instr))
 ;              (print nxt-opcode)
 ;              (print nxt-state)
-;              (println "\nDisplay Output:\n")
-              ;(printf "%s\r\n" (render-screen nxt-state))
               (update-gui! nxt-state)
               (update-in nxt-state [:pc] + 2))))
     ]

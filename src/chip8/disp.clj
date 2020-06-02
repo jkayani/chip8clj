@@ -62,14 +62,10 @@
     rows (partition 64 display)
     pixel-value #(if (zero? %) off-pixel on-pixel)
   ]
-    (do 
-      (->>
-        (mapv
-          (fn [row]
-            (do
-              (->> (map pixel-value row) (reduce str))))
-            rows)))))
-;          (reduce #(str %1 "\n" %2))))))
+    (mapv
+      (fn [row]
+        (->> (map pixel-value row) (reduce str)))
+      rows)))
 
 ; Lanterna stuff
 

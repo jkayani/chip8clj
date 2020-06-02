@@ -87,12 +87,6 @@
         (not-every? zero?))
   ]
     (do
-  ;      (println changed-memory-addrs)
-  ;      (println sprite-data)
-  ;      (println changed-pixel-start-addrs)
-  ;      (println old-pixel-data)
-  ;      (println new-pixel-data)
-  ;      (println pixels-flipped?)
       (->
         (update-display 
           state 
