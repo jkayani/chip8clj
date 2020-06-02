@@ -49,11 +49,12 @@
 ;              (print nxt-opcode)
 ;              (print nxt-state)
 ;              (println "\nDisplay Output:\n")
-              (printf "%s\r\n" (render-screen nxt-state))
+              ;(printf "%s\r\n" (render-screen nxt-state))
+              (update-gui! nxt-state)
               (update-in nxt-state [:pc] + 2))))
     ]
       (do
-        (clean-sh)
+        (exit-program?)
         (if (> (new-state :pc) (-> (new-state :memory) (count) (- 2)))
           new-state
           (recur @vm))))))
@@ -62,6 +63,7 @@
   "I don't do a whole lot ... yet."
   [& args]
     (do
+      (start-display!)
       (->>
         (read-program! (first args))
         (execute!))))

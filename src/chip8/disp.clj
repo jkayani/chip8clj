@@ -1,7 +1,8 @@
 (ns chip8.disp
   (:gen-class)
   (:use [clojure.java.shell :only [sh]])
-  (:require [chip8.utils :refer :all]))
+  (:require [chip8.utils :refer :all]
+            [lanterna.screen :as screen]))
 
 (defn clean-sh []
   (sh "clear"))
@@ -53,19 +54,52 @@
     (assoc state :display 
       (reduce-kv assoc old-display changes))))
 
-(defn render-screen [state]
+(defn draw-screen [state]
   (let [
     on-pixel "◼◼"
     off-pixel "  "
-    screen (state :display)
-    rows (partition 64 screen)
+    display (state :display)
+    rows (partition 64 display)
     pixel-value #(if (zero? %) off-pixel on-pixel)
   ]
     (do 
       (->>
-        (map
+        (mapv
           (fn [row]
             (do
               (->> (map pixel-value row) (reduce str))))
-            rows)
-          (reduce #(str %1 "\n" %2))))))
+            rows)))))
+;          (reduce #(str %1 "\n" %2))))))
+
+; Lanterna stuff
+
+(defn new-display []
+  (->> 
+    {:cols 120 :rows 30}
+  (screen/get-screen :text)))
+
+(def gui (new-display))
+
+(defn start-display! []
+  (screen/start gui))
+
+(defn update-gui! [state]
+  (let [
+    rows (draw-screen state)
+  ]
+    (do
+      (loop [n 0]
+        (screen/put-string gui 0 n (rows n))
+        (if (= 31 n) nil (recur (inc n))))
+      (screen/redraw gui))
+      (screen/move-cursor gui 0 0)))
+  
+(defn exit-program? []
+  (loop [c (screen/get-key gui)]
+    (if (= :escape c)
+      (do
+        (screen/stop gui)
+        (System/exit 0))
+      (if (nil? c)
+        nil
+        (recur (screen/get-key gui))))))
