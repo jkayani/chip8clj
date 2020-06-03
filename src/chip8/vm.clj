@@ -41,13 +41,16 @@
       (* 0x100 (read-memory state instr-ptr))
       (read-memory state (inc instr-ptr))))))
 
+(defn jump-to-addr [state addr]
+  (assoc state :pc (- addr 2)))
+
 (defn skip-nxt-instruction [state]
-  (update-in state [:pc] (partial + 2)))
+  (jump-to-addr state (-> (state :pc) (+ 4))))
 
 (defn call-subroutine [state addr]
   (->
     (update-in state [:stack] #(cons (partial (+ 2 (state :pc))) %))
-    (assoc :pc (- addr 2)))) 
+    (jump-to-addr addr)))
 
 (defn exit-subroutine [state]
   (let [
@@ -55,10 +58,7 @@
   ]
     (->
       (update-in state [:stack] #(rest %))
-      (assoc :pc (- nxt-addr 2)))))
-
-(defn jump-to-addr [state addr]
-  (assoc state :pc (- addr 2)))
+      (jump-to-addr nxt-addr))))
 
 (defn set-I [state addr]
   (assoc state :I-addr addr))
