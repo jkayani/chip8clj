@@ -1,6 +1,7 @@
 (ns chip8.opcodes
   (:gen-class)
   (:require [chip8.utils :refer :all]
+            [chip8.disp :refer :all]
             [chip8.vm :refer :all]))
 
 (defn op3 [state register constant]
@@ -126,6 +127,25 @@
     (+ addr)
     (jump-to-addr state)))
 
+(defn op-skip-key-eq [state reg]
+  (let [
+    target-key (read-register state reg)
+  ]
+    (if (key-pressed? target-key)
+      (skip-nxt-instruction state)
+      state)))
+
+(defn op-skip-key-neq [state reg]
+  (let [
+    target-key (read-register state reg)
+  ]
+    (if (not (key-pressed? target-key))
+      (skip-nxt-instruction state)
+      state)))
+
+(defn store-nxt-keypress [state reg]
+  (update-register state reg get-keypress!))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -135,6 +155,10 @@
 (defn addr-opcode [word]
   "For opcodes with an address input"
   (list (bit-and word 0xFFF)))
+
+(defn reg-opcode [word]
+  "For opcodes with an register input"
+  (list (get-nibble word 2)))
 
 (defn reg-constant-opcode [word]
   "For opcodes with 1 register and 1 constant as input"
@@ -181,6 +205,24 @@
       (list nil)
       (cons operation (double-reg-opcode word)))))
 
+(defn opE-family [word]
+  (case 
+    (get-byte word 2)
+    0x9E (list op-skip-key-eq (reg-opcode word))
+    0xA1 (list op-skip-key-neq (reg-opcode word))))
+
+(defn opF-family [word]
+  (let [
+    code (get-byte word 2)
+    ops {
+      0x0A store-nxt-keypress 
+    }
+    operation (ops code)
+  ]
+  (if (nil? operation)
+    (list nil)
+    (list operation (reg-opcode word)))))
+
 ; Opcode selection
 
 (defn choose-opcode [word]
@@ -200,4 +242,6 @@
       0xA (cons set-I (addr-opcode word))
       0xB (cons opB (addr-opcode word))
       0xD (cons draw-sprite (double-reg-constant-opcode word))
+      0xE (cons opE-family word) 
+      0xF (cons opF-family word) 
       nil)))

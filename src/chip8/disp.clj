@@ -89,6 +89,17 @@
         (if (= 31 n) nil (recur (inc n))))
       (screen/redraw gui))
       (screen/move-cursor gui 0 0)))
+
+(defn key-pressed? [k]
+  (loop [c (screen/get-key gui)]
+    (if (= k c)
+      true
+      (if (nil? c)
+        false
+        (recur (screen/get-key gui))))))
+
+(defn get-keypress! []
+  (screen/get-key-blocking gui))
   
 (defn exit-program? []
   (loop [c (screen/get-key gui)]
