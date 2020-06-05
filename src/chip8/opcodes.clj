@@ -133,6 +133,14 @@
     (constantly)
     (update-register state reg)))
 
+(defn bcd [state reg]
+  (let [
+    value (read-register state reg)
+    digits (map #(-> (quot value %) (rem 10)) '(100 10 1))
+    mem-range (range (state :I-addr) (+ (state :I-addr) 3))
+  ]
+    (reduce-kv update-memory state (zipmap mem-range digits))))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -197,7 +205,7 @@
     code (get-byte word 2)
     ops {
       0x1E increment-I
-;      0x33 write-bcd
+      0x33 bcd
 ;      0x55 reg-dump
 ;      0x65 reg-load
     }

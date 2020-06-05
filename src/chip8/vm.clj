@@ -32,6 +32,10 @@
     (get-in state [:memory addr])
     (byte-it)))
 
+(defn update-memory [state addr value]
+  (->
+    (update-in state [:memory addr] (constantly value))))
+
 (defn fetch-nxt-instruction [state]
   (let [
     instr-ptr (state :pc)
