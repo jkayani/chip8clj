@@ -126,6 +126,13 @@
     (+ addr)
     (jump-to-addr state)))
 
+(defn opC [state reg constant]
+  (->>
+    (-> (rand 256) (int))
+    (bit-and constant)
+    (constantly)
+    (update-register state reg)))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -199,5 +206,6 @@
       9 (cons op9 (double-reg-opcode word))
       0xA (cons set-I (addr-opcode word))
       0xB (cons opB (addr-opcode word))
+      0xC (cons opC (reg-constant-opcode word))
       0xD (cons draw-sprite (double-reg-constant-opcode word))
       nil)))
