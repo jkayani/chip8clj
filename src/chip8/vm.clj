@@ -63,6 +63,15 @@
 (defn set-I [state addr]
   (assoc state :I-addr addr))
 
+(defn increment-I [state reg]
+  (let [
+    new-I (-> (read-register state reg) (+ (state :I-addr)))
+    overflow? (if (> new-I 0xFFF) 1 0)
+  ]
+    (->
+      (set-I state new-I)
+      (update-register 0xF (constantly overflow?)))))
+
 (defn draw-sprite [state reg1 reg2 height]
   (let [
     x (read-register state reg1)

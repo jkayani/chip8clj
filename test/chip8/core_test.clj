@@ -17,8 +17,10 @@
           [
             ; Store 1 in reg1
             0x61 0x01 
+            ; Increment I-addr by 1
+            0xF1 0x1E
             ; Call subroutine A
-            0x22 0x2C
+            0x22 0x2E
             ; Store 2 in reg2
             0x62 0x02 
             ; Store 3 in reg3
@@ -89,7 +91,10 @@
                5 0 
                0xE 0xFF})))
         (is
-          (= (get $ :pc) 0xFFF)))))
+          (= (get $ :pc) 0xFFF))
+
+        (is
+          (= (get $ :I-addr) 0x1)))))
 
   (testing "INTEGRATION TEST: setting I-Addr"
     (let [

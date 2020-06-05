@@ -139,6 +139,10 @@
   "For opcodes with no input"
   (list word))
 
+(defn reg-opcode [word]
+  "For opcodes with a register as input"
+  (list (get-nibble word 2)))
+
 (defn addr-opcode [word]
   "For opcodes with an address input"
   (list (bit-and word 0xFFF)))
@@ -188,6 +192,21 @@
       (list nil)
       (cons operation (double-reg-opcode word)))))
 
+(defn opF-family [word]
+  (let [
+    code (get-byte word 2)
+    ops {
+      0x1E increment-I
+;      0x33 write-bcd
+;      0x55 reg-dump
+;      0x65 reg-load
+    }
+    operation (ops code)
+  ]
+  (if (nil? operation)
+    (list nil)
+    (cons operation (reg-opcode word)))))
+
 ; Opcode selection
 
 (defn choose-opcode [word]
@@ -208,4 +227,5 @@
       0xB (cons opB (addr-opcode word))
       0xC (cons opC (reg-constant-opcode word))
       0xD (cons draw-sprite (double-reg-constant-opcode word))
+      0xF (opF-family word)
       nil)))
