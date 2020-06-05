@@ -180,4 +180,37 @@
           (= 9 ($ 2))
           (= 1 ($ 0xF)))
         (is $)))))
+
+  (testing "incrementing I address"
+    (let [
+      s (update-in (new-vm) [:registers] merge {1 1})
+      overflow (assoc s :I-addr 0xFFF)
+    ]
+    (do
+
+      ; No overflow
+      (as->
+        (increment-I s 1) $
+        (do
+          (->
+            (get $ :I-addr)
+            (= 0x1)
+            (is))
+          (->
+            (get-in $ [:registers 0xF])
+            (= 0x0)
+            (is))))
+      
+      ; Overflow
+      (as->
+        (increment-I overflow 1) $
+        (do
+          (->
+            (get $ :I-addr)
+            (= 0x0)
+            (is))
+          (->
+            (get-in $ [:registers 0xF])
+            (= 0x1)
+            (is)))))))
 )

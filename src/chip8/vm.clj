@@ -69,7 +69,7 @@
     overflow? (if (> new-I 0xFFF) 1 0)
   ]
     (->
-      (set-I state new-I)
+      (set-I state (bit-and 0xFFF new-I))
       (update-register 0xF (constantly overflow?)))))
 
 (defn draw-sprite [state reg1 reg2 height]
