@@ -5,7 +5,7 @@
 
 (defn new-vm []
   {
-    :memory (repeat 0x200 0)
+    :memory (-> (repeat 0x200 0) (vec))
     :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
     :I-addr 0x0000
     :pc 0x200
@@ -33,8 +33,7 @@
     (byte-it)))
 
 (defn update-memory [state addr value]
-  (->
-    (update-in state [:memory addr] (constantly value))))
+  (update-in state [:memory addr] (constantly value)))
 
 (defn fetch-nxt-instruction [state]
   (let [

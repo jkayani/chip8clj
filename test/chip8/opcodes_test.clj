@@ -213,4 +213,27 @@
             (get-in $ [:registers 0xF])
             (= 0x1)
             (is)))))))
+
+  (testing "BCD"
+    (let [
+      all-regs (update-in (new-vm) [:registers] merge {1 123})
+      some-regs (update-in (new-vm) [:registers] merge {1 1})
+    ]
+    (do
+
+      (as->
+        ((bcd all-regs 1) :memory) $
+        (do
+          (->
+            (subvec $ 0 3)
+            (= [1 2 3])
+            (is))))
+
+      (as->
+        ((bcd some-regs 1) :memory) $
+        (do
+          (->
+            (subvec $ 0 3)
+            (= [0 0 1])
+            (is)))))))
 )
