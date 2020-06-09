@@ -236,4 +236,35 @@
             (subvec $ 0 3)
             (= [0 0 1])
             (is)))))))
+
+  (testing "REGDUMP"
+    (let [
+      s (update-in (new-vm) [:registers] 
+          merge (zipmap (range 0 16) (range 0 16)))
+    ]
+    (do
+
+      (as->
+        ((reg-dump s 0xF) :memory) $
+        (do
+          (->
+            (subvec $ 0 9)
+            (= (range 0 9))
+            (is)))))))
+
+  (testing "REGLOAD"
+    (let [
+      s (->
+          (update-in (new-vm) [:memory] concat (range 5 (+ 5 16)))
+          (update-in [:memory] vec)
+          (assoc :I-addr 0x200))
+    ]
+    (do
+      (as->
+        ((reg-load s 0xF) :registers) $
+        (do
+          (->
+            (vals $)
+            (= (range 5 (+ 16 5)))
+            (is)))))))
 )

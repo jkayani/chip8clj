@@ -141,6 +141,24 @@
   ]
     (reduce-kv update-memory state (zipmap mem-range digits))))
 
+(defn reg-dump [state reg]
+  (let [
+    mem-range (range (state :I-addr) (+ (state :I-addr) (inc reg)))
+  ]
+    (->>
+      (map #(read-register state %) (keys (state :registers)))
+      (zipmap mem-range) 
+      (reduce-kv update-memory state))))
+
+(defn reg-load [state reg]
+  (let [
+    mem-range (range (state :I-addr) (+ (state :I-addr) (inc reg)))
+  ]
+    (->>
+      (map #(read-memory state %) mem-range)
+      (zipmap (keys (state :registers)))
+      (reduce-kv update-register state))))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -206,8 +224,8 @@
     ops {
       0x1E increment-I
       0x33 bcd
-;      0x55 reg-dump
-;      0x65 reg-load
+      0x55 reg-dump
+      0x65 reg-load
     }
     operation (ops code)
   ]

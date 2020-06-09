@@ -22,8 +22,10 @@
 (defn read-register [state register]
   (get-in state [:registers register]))
 
-(defn update-register [state register value-fn]
-  (update-in state [:registers register] #(value-fn %)))
+(defn update-register [state register value-fn-or-value]
+  (if (fn? value-fn-or-value) 
+    (update-in state [:registers register] #(value-fn-or-value %))
+    (update-in state [:registers register] (constantly value-fn-or-value))))
 
 ; Memory
 

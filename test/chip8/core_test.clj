@@ -20,7 +20,7 @@
             ; Increment I-addr by 1
             0xF1 0x1E
             ; Call subroutine A
-            0x22 0x2E
+            0x22 0x32
             ; Store 2 in reg2
             0x62 0x02 
             ; Store 3 in reg3
@@ -68,6 +68,12 @@
               0x94 0x20
               ; An instruction meant to be skipped (store FF into reg5)
               0x65 0xFF
+
+            ; Dump registers to memory
+              0xFE 0x55
+
+            ; Then, reload them
+              0xFE 0x65
 
             ; Jump FAR away 
             0x1F 0xFF
