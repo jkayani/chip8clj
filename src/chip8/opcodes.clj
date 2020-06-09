@@ -146,11 +146,48 @@
 (defn store-nxt-keypress [state reg]
   (update-register state reg get-keypress!))
 
+(defn opC [state reg constant]
+  (->>
+    (-> (rand 256) (int))
+    (bit-and constant)
+    (constantly)
+    (update-register state reg)))
+
+(defn bcd [state reg]
+  (let [
+    value (read-register state reg)
+    digits (map #(-> (quot value %) (rem 10)) '(100 10 1))
+    mem-range (range (state :I-addr) (+ (state :I-addr) 3))
+  ]
+    (reduce-kv update-memory state (zipmap mem-range digits))))
+
+(defn reg-dump [state reg]
+  (let [
+    mem-range (range (state :I-addr) (+ (state :I-addr) (inc reg)))
+  ]
+    (->>
+      (map #(read-register state %) (keys (state :registers)))
+      (zipmap mem-range) 
+      (reduce-kv update-memory state))))
+
+(defn reg-load [state reg]
+  (let [
+    mem-range (range (state :I-addr) (+ (state :I-addr) (inc reg)))
+  ]
+    (->>
+      (map #(read-memory state %) mem-range)
+      (zipmap (keys (state :registers)))
+      (reduce-kv update-register state))))
+
 ; Instruction parsing
 
 (defn const-opcode [word]
   "For opcodes with no input"
   (list word))
+
+(defn reg-opcode [word]
+  "For opcodes with a register as input"
+  (list (get-nibble word 2)))
 
 (defn addr-opcode [word]
   "For opcodes with an address input"
@@ -208,20 +245,24 @@
 (defn opE-family [word]
   (case 
     (get-byte word 2)
-    0x9E (list op-skip-key-eq (reg-opcode word))
-    0xA1 (list op-skip-key-neq (reg-opcode word))))
+    0x9E (cons op-skip-key-eq (reg-opcode word))
+    0xA1 (cons op-skip-key-neq (reg-opcode word))))
 
 (defn opF-family [word]
   (let [
     code (get-byte word 2)
     ops {
       0x0A store-nxt-keypress 
+      0x1E increment-I
+      0x33 bcd
+      0x55 reg-dump
+      0x65 reg-load
     }
     operation (ops code)
   ]
   (if (nil? operation)
     (list nil)
-    (list operation (reg-opcode word)))))
+    (cons operation (reg-opcode word)))))
 
 ; Opcode selection
 
@@ -241,7 +282,8 @@
       9 (cons op9 (double-reg-opcode word))
       0xA (cons set-I (addr-opcode word))
       0xB (cons opB (addr-opcode word))
+      0xC (cons opC (reg-constant-opcode word))
       0xD (cons draw-sprite (double-reg-constant-opcode word))
-      0xE (cons opE-family word) 
-      0xF (cons opF-family word) 
+      0xE (opE-family word) 
+      0xF (opF-family word) 
       nil)))

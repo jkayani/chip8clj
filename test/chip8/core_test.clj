@@ -17,8 +17,10 @@
           [
             ; Store 1 in reg1
             0x61 0x01 
+            ; Increment I-addr by 1
+            0xF1 0x1E
             ; Call subroutine A
-            0x22 0x2C
+            0x22 0x32
             ; Store 2 in reg2
             0x62 0x02 
             ; Store 3 in reg3
@@ -67,6 +69,12 @@
               ; An instruction meant to be skipped (store FF into reg5)
               0x65 0xFF
 
+            ; Dump registers to memory
+              0xFE 0x55
+
+            ; Then, reload them
+              0xFE 0x65
+
             ; Jump FAR away 
             0x1F 0xFF
 
@@ -89,7 +97,10 @@
                5 0 
                0xE 0xFF})))
         (is
-          (= (get $ :pc) 0xFFF)))))
+          (= (get $ :pc) 0xFFF))
+
+        (is
+          (= (get $ :I-addr) 0x1)))))
 
   (testing "INTEGRATION TEST: setting I-Addr"
     (let [

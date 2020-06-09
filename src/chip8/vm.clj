@@ -5,7 +5,7 @@
 
 (defn new-vm []
   {
-    :memory (repeat 0x200 0)
+    :memory (-> (repeat 0x200 0) (vec))
     :registers (apply sorted-map (interleave (range 0x10) (repeat 0x10 0)))
     :I-addr 0x0000
     :pc 0x200
@@ -22,8 +22,10 @@
 (defn read-register [state register]
   (get-in state [:registers register]))
 
-(defn update-register [state register value-fn]
-  (update-in state [:registers register] #(value-fn %)))
+(defn update-register [state register value-fn-or-value]
+  (if (fn? value-fn-or-value) 
+    (update-in state [:registers register] #(value-fn-or-value %))
+    (update-in state [:registers register] (constantly value-fn-or-value))))
 
 ; Memory
 
@@ -31,6 +33,9 @@
   (-> 
     (get-in state [:memory addr])
     (byte-it)))
+
+(defn update-memory [state addr value]
+  (update-in state [:memory addr] (constantly value)))
 
 (defn fetch-nxt-instruction [state]
   (let [
@@ -62,6 +67,15 @@
 
 (defn set-I [state addr]
   (assoc state :I-addr addr))
+
+(defn increment-I [state reg]
+  (let [
+    new-I (-> (read-register state reg) (+ (state :I-addr)))
+    overflow? (if (> new-I 0xFFF) 1 0)
+  ]
+    (->
+      (set-I state (bit-and 0xFFF new-I))
+      (update-register 0xF (constantly overflow?)))))
 
 (defn draw-sprite [state reg1 reg2 height]
   (let [
