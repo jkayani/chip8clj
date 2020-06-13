@@ -99,14 +99,12 @@
         (recur (screen/get-key gui))))))
 
 (defn get-keypress! []
-  (screen/get-key-blocking gui))
+  (->
+    (screen/get-key-blocking gui)
+    (Character/digit 16)))
   
 (defn exit-program? []
-  (loop [c (screen/get-key gui)]
-    (if (= :escape c)
-      (do
-        (screen/stop gui)
-        (System/exit 0))
-      (if (nil? c)
-        nil
-        (recur (screen/get-key gui))))))
+  (if (key-pressed? :escape)
+    (do 
+      (screen/stop gui)
+      (System/exit 0))))

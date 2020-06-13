@@ -129,7 +129,10 @@
 
 (defn op-skip-key-eq [state reg]
   (let [
-    target-key (read-register state reg)
+    target-key 
+      (-> 
+        (read-register state reg)
+        (Character/forDigit 16))
   ]
     (if (key-pressed? target-key)
       (skip-nxt-instruction state)
@@ -137,14 +140,19 @@
 
 (defn op-skip-key-neq [state reg]
   (let [
-    target-key (read-register state reg)
+    target-key
+      (-> 
+        (read-register state reg)
+        (Character/forDigit 16))
   ]
     (if (not (key-pressed? target-key))
       (skip-nxt-instruction state)
       state)))
 
 (defn store-nxt-keypress [state reg]
-  (update-register state reg get-keypress!))
+  (->>
+    (get-keypress!)
+    (update-register state reg)))
 
 (defn opC [state reg constant]
   (->>
