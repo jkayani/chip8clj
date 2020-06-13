@@ -187,6 +187,22 @@
       (zipmap (keys (state :registers)))
       (reduce-kv update-register state))))
 
+(defn set-delay-timer [state reg]
+  (->>
+    (read-register state reg)
+    (assoc state :delay-timer)))
+
+(defn get-delay-timer [state reg]
+  (->>
+    (state :delay-timer)
+    (update-register state reg)))
+
+(defn set-sound-timer [state reg]
+  (->>
+    (read-register state reg)
+    (assoc state :sound-timer)))
+
+
 ; Instruction parsing
 
 (defn const-opcode [word]
@@ -260,8 +276,12 @@
   (let [
     code (get-byte word 2)
     ops {
+      0x07 get-delay-timer
       0x0A store-nxt-keypress 
+      0x15 set-sound-timer
+      0x18 set-delay-timer
       0x1E increment-I
+      0x29 #(constantly %1)
       0x33 bcd
       0x55 reg-dump
       0x65 reg-load
